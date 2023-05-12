@@ -1,10 +1,7 @@
-import { ThemeProvider } from './ThemeProvider';
-import { Welcome } from './Welcome/Welcome';
+import { DoubleNavbar } from './DoubleNavbar';
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <Welcome />
-    </ThemeProvider>
+    <DoubleNavbar />
   );
 }
