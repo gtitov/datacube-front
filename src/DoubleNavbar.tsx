@@ -3,7 +3,7 @@ import DeckGL from '@deck.gl/react/typed';
 import { H3HexagonLayer } from '@deck.gl/geo-layers/typed';
 import { Map } from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
-import { createStyles, AppShell, Navbar, Header, UnstyledButton, Tooltip, Title, Text, Select, MultiSelect, Stack, Group, Divider, rem } from '@mantine/core';
+import { createStyles, AppShell, Navbar, Header, UnstyledButton, Tooltip, Title, Text, Select, MultiSelect, Stack, Group, Divider, ScrollArea, rem } from '@mantine/core';
 
 import {
   IconEyeglass,
@@ -119,7 +119,7 @@ const mainLinksData = [
 const variablesAvaliable = ['o2', 'spco2', 'chl'];
 const datesAvaliable = [...Array(12)].map((v, i) => `2020-${String(i + 1).padStart(2, '0')}-01`);
 const depthsAvaliable = ['0', '2', '5'];
-const animalsAvaliable = ['Ursus', 'Pinus', 'Pika'];
+// const generateAnimalsAvaliable = (animals) => { [...new Set(animals.map(row => row.species))]; };
 
 // Viewport settings
 const INITIAL_VIEW_STATE = {
@@ -164,8 +164,8 @@ export function DoubleNavbar() {
   const [selectedDepth, setSelectedDepth] = useState<string | null>(depthsAvaliable[0]);
   const [selectedAnimals, setSelectedAnimals] = useState<Array<string>>([]);
 
-  const [variableData, setVariableData] = useState();
-  const [animalsData, setAnimalsData] = useState();
+  const [variableData, setVariableData] = useState<Array<any> | null>();
+  const [animalsData, setAnimalsData] = useState<Array<any> | null>([]);
 
   // const [groupByGenus, setGroupByGenus] = useState(false);
 
@@ -176,11 +176,12 @@ export function DoubleNavbar() {
   }, [selectedVariable, selectedDate, selectedDepth]);
   console.log(variableData);
 
-  // useEffect(() => {
-  //   fetch(`http://178.154.229.47:3000/context?select=h3,${selectedVariable}&date=eq.${selectedDate}&depth=eq.${selectedDepth}`)
-  //     .then(r => r.json())
-  //     .then(json => setAnimalsData(json));
-  // }, [selectedAnimals, selectedDate]);
+  useEffect(() => {
+    fetch(`http://178.154.229.47:3000/animals?select=h3,species,occurences&date=eq.${selectedDate}&order=occurences.desc`)
+      .then(r => r.json())
+      .then(json => setAnimalsData(json));
+  }, [selectedDate]);
+  console.log(animalsData);
 
   const mainLinks = mainLinksData.map((link) => (
     <Tooltip
@@ -231,56 +232,59 @@ export function DoubleNavbar() {
               <Title order={4} className={classes.title}>
                 {activeMainLink}
               </Title>
-              <Title m="md" order={6}>
-                Параметры среды
-              </Title>
-              <Select
-                m="md"
-                data={variablesAvaliable}
-                value={selectedVariable}
-                onChange={setSelectedVariable}
-                label="Показатель"
-              />
-              <Select
-                m="md"
-                data={datesAvaliable}
-                value={selectedDate}
-                onChange={setSelectedDate}
-                label="Месяц"
-              />
-              <Select
-                m="md"
-                data={depthsAvaliable}
-                value={selectedDepth}
-                onChange={setSelectedDepth}
-                label="Глубина"
-              />
+              <ScrollArea type="always" h="100%">
+                <Title m="md" order={6}>
+                  Параметры среды
+                </Title>
+                <Select
+                  m="md"
+                  data={variablesAvaliable}
+                  value={selectedVariable}
+                  onChange={setSelectedVariable}
+                  label="Показатель"
+                />
+                <Select
+                  m="md"
+                  data={datesAvaliable}
+                  value={selectedDate}
+                  onChange={setSelectedDate}
+                  label="Месяц"
+                />
+                <Select
+                  m="md"
+                  data={depthsAvaliable}
+                  value={selectedDepth}
+                  onChange={setSelectedDepth}
+                  label="Глубина"
+                />
 
-              <Divider my="xl" />
-              <Title m="md" order={6}>
-                Животные
-              </Title>
+                <Divider my="xl" />
+                <Title m="md" order={6}>
+                  Животные
+                </Title>
 
-              {/* <Switch
+                {/* <Switch
                 m="md"
                 checked={groupByGenus}
                 onChange={(event) => setGroupByGenus(event.currentTarget.checked)}
                 labelPosition="left"
                 label="Сгруппировать по родам"
               /> */}
-              <MultiSelect
-                m="md"
-                label="Вид"
-                value={selectedAnimals}
-                onChange={setSelectedAnimals}
-                data={animalsAvaliable}
-              />
+                <MultiSelect
+                  clearable
+                  m="md"
+                  label="Вид"
+                  value={selectedAnimals}
+                  onChange={setSelectedAnimals}
+                  data={[...new Set(animalsData.map(row => row.species))]}
+                />
 
-              <Divider my="xl" />
-              <Title m="md" order={6}>
-                Легенда
-              </Title>
-              {generateLegend(selectedVariable)}
+                <Divider my="xl" />
+                <Title m="md" order={6}>
+                  Легенда
+                </Title>
+                {generateLegend(selectedVariable)}
+              </ScrollArea>
             </div>
           </Navbar.Section>
         }
@@ -306,6 +310,13 @@ export function DoubleNavbar() {
           pickable
           getHexagon={e => e.h3}
           getFillColor={e => calculateColor(e)}
+        />
+        <H3HexagonLayer
+          id="hexagons-animals"
+          data={animalsData.filter(row => selectedAnimals.includes(row.species))}
+          pickable
+          getHexagon={e => e.h3}
+          getFillColor={[255, 0, 0, 50]}
         />
       </DeckGL>
     </AppShell>
