@@ -2,13 +2,17 @@ import { useState, useEffect } from 'react';
 import DeckGL from '@deck.gl/react/typed';
 import { H3HexagonLayer } from '@deck.gl/geo-layers/typed';
 import { Map } from 'react-map-gl';
-import { createStyles, AppShell, Navbar, Header, UnstyledButton, Tooltip, Title, Select, MultiSelect, Switch, Divider, rem } from '@mantine/core';
+import maplibregl from 'maplibre-gl';
+import { createStyles, AppShell, Navbar, Header, UnstyledButton, Tooltip, Title, Text, Select, MultiSelect, Stack, Group, Divider, rem } from '@mantine/core';
 
 import {
   IconEyeglass,
   IconDeviceDesktopAnalytics,
   IconTopologyStar3,
 } from '@tabler/icons-react';
+
+import mapstyle from './basemap.json';
+import legend from './legend.json';
 
 const useStyles = createStyles((theme) => ({
   wrapper: {
@@ -115,14 +119,41 @@ const mainLinksData = [
 const variablesAvaliable = ['o2', 'spco2', 'chl'];
 const datesAvaliable = [...Array(12)].map((v, i) => `2020-${String(i + 1).padStart(2, '0')}-01`);
 const depthsAvaliable = ['0', '2', '5'];
+const animalsAvaliable = ['Ursus', 'Pinus', 'Pika'];
 
 // Viewport settings
 const INITIAL_VIEW_STATE = {
-  longitude: 40.41669,
-  latitude: 80.7853,
-  zoom: 2,
-  pitch: 0,
-  bearing: 0,
+  longitude: 20,
+  latitude: 77,
+  zoom: 3,
+};
+
+const calculateColor = (row) => {
+  const currentVariable = Object.keys(row)[1];
+  const currentValue = row[currentVariable];
+  const thesholdValues = legend[currentVariable].values;
+  const thesholdIndex = thesholdValues.findIndex(v => currentValue < v);
+
+  return legend[currentVariable].colors.at(thesholdIndex);
+};
+
+const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
+  const hex = x.toString(16)
+  return hex.length === 1 ? '0' + hex : hex
+}).join('')
+
+const generateLegend = (variable) => {
+  const variableLegend = legend[variable];
+  const labels = [`менее ${variableLegend.values[0]}`].concat(variableLegend.values.map((v, i) => variableLegend.values[i + 1] ? `от ${variableLegend.values[i]} до ${variableLegend.values[i + 1]}` : `более ${variableLegend.values[i]}`));
+  const legendItems = variableLegend.colors
+    .map((v, i) => ({ color: v, label: labels[i] }))
+    .reverse();
+  return (
+    <Stack m="md" spacing="xs">
+      <Text>{variableLegend.label}</Text>
+      {legendItems.map(v => <Group spacing="xs" key={v.label}><div className="w-5 h-5 rounded-sm" style={{ backgroundColor: rgbToHex(...v.color) }} /><Text fz="sm">{v.label}</Text></Group>)}
+    </Stack>
+  )
 };
 
 export function DoubleNavbar() {
@@ -131,25 +162,25 @@ export function DoubleNavbar() {
   const [selectedVariable, setSelectedVariable] = useState<string | null>(variablesAvaliable[0]);
   const [selectedDate, setSelectedDate] = useState<string | null>(datesAvaliable[0]);
   const [selectedDepth, setSelectedDepth] = useState<string | null>(depthsAvaliable[0]);
-  const [mapData, setMapData] = useState();
+  const [selectedAnimals, setSelectedAnimals] = useState<Array<string>>([]);
 
-  // async function logJSONData(variable, date, depth) {
-  //   const response = await fetch(`http://178.154.229.47:3000/context?select=h3,${variable}&date=eq.${date}&depth=eq.${depth}`);
-  //   const jsonData = await response.json();
-  //   return jsonData;
-  // }
+  const [variableData, setVariableData] = useState();
+  const [animalsData, setAnimalsData] = useState();
+
+  // const [groupByGenus, setGroupByGenus] = useState(false);
 
   useEffect(() => {
     fetch(`http://178.154.229.47:3000/context?select=h3,${selectedVariable}&date=eq.${selectedDate}&depth=eq.${selectedDepth}`)
       .then(r => r.json())
-      .then(json => setMapData(json));
+      .then(json => setVariableData(json));
   }, [selectedVariable, selectedDate, selectedDepth]);
+  console.log(variableData);
 
-  // const mapData = logJSONData(selectedVariable, selectedDate, selectedDepth);
-  // const mapData = fetch(`http://178.154.229.47:3000/context?select=h3,${selectedVariable}&date=eq.${selectedDate}&depth=eq.${selectedDepth}`)
-  //   .then(r => r.json())
-  //   .then(json => json);
-  console.log(mapData);
+  // useEffect(() => {
+  //   fetch(`http://178.154.229.47:3000/context?select=h3,${selectedVariable}&date=eq.${selectedDate}&depth=eq.${selectedDepth}`)
+  //     .then(r => r.json())
+  //     .then(json => setAnimalsData(json));
+  // }, [selectedAnimals, selectedDate]);
 
   const mainLinks = mainLinksData.map((link) => (
     <Tooltip
@@ -208,18 +239,21 @@ export function DoubleNavbar() {
                 data={variablesAvaliable}
                 value={selectedVariable}
                 onChange={setSelectedVariable}
+                label="Показатель"
               />
               <Select
                 m="md"
                 data={datesAvaliable}
                 value={selectedDate}
                 onChange={setSelectedDate}
+                label="Месяц"
               />
               <Select
                 m="md"
                 data={depthsAvaliable}
                 value={selectedDepth}
                 onChange={setSelectedDepth}
+                label="Глубина"
               />
 
               <Divider my="xl" />
@@ -227,15 +261,26 @@ export function DoubleNavbar() {
                 Животные
               </Title>
 
-              <Switch
+              {/* <Switch
                 m="md"
+                checked={groupByGenus}
+                onChange={(event) => setGroupByGenus(event.currentTarget.checked)}
                 labelPosition="left"
                 label="Сгруппировать по родам"
-              />
+              /> */}
               <MultiSelect
                 m="md"
-                data={depthsAvaliable}
+                label="Вид"
+                value={selectedAnimals}
+                onChange={setSelectedAnimals}
+                data={animalsAvaliable}
               />
+
+              <Divider my="xl" />
+              <Title m="md" order={6}>
+                Легенда
+              </Title>
+              {generateLegend(selectedVariable)}
             </div>
           </Navbar.Section>
         }
@@ -246,42 +291,23 @@ export function DoubleNavbar() {
         main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
       })}
     >
-      {
-        <DeckGL
-          initialViewState={INITIAL_VIEW_STATE}
-          controller
-        >
-          {/* <Map mapboxAccessToken="pk.eyJ1IjoiZ2hlcm1hbnQiLCJhIjoiY2pncDUwcnRmNDQ4ZjJ4czdjZXMzaHZpNyJ9.3rFyYRRtvLUngHm027HZ7A" /> */}
-          <H3HexagonLayer
-            id="hexagons-context"
-            data={mapData}
-            filled
-            pickable
-            getHexagon={e => e.h3}
-            getFillColor={e => [0, e[selectedVariable] * 10 - 100, 200]}
-          />
-        </DeckGL>
-        // <DeckGL
-        //   controller
-        //   initialViewState={{
-        //     longitude: -122.41669,
-        //     latitude: 37.7853,
-        //     zoom: 2,
-        //     pitch: 0,
-        //     bearing: 0,
-        //   }}
-        // >
-        //   {/* <H3HexagonLayer
-        //   id="hexagons"
-        //   data={mapData}
-        //   filled
-        //   pickable
-        //   getHexagons={e => e.h3}
-        //   getFillColor={[0, 128, 200]}
-        // /> */}
-        //   <Map mapboxAccessToken="pk.eyJ1IjoiZ2hlcm1hbnQiLCJhIjoiY2pncDUwcnRmNDQ4ZjJ4czdjZXMzaHZpNyJ9.3rFyYRRtvLUngHm027HZ7A" />
-        // </DeckGL>
-      }
+      <DeckGL
+        initialViewState={INITIAL_VIEW_STATE}
+        controller
+      >
+        <Map
+          mapLib={maplibregl}
+          mapStyle={mapstyle}
+        />
+        <H3HexagonLayer
+          id="hexagons-context"
+          data={variableData}
+          filled
+          pickable
+          getHexagon={e => e.h3}
+          getFillColor={e => calculateColor(e)}
+        />
+      </DeckGL>
     </AppShell>
 
   );
