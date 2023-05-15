@@ -116,9 +116,9 @@ const mainLinksData = [
   { icon: IconTopologyStar3, label: 'Машинная оценка' },
 ];
 
-const variablesAvaliable = ['o2', 'spco2', 'chl'];
+const variablesAvaliable = ['spco2', 'o2', 'chl', 'expc', 'zooc', 'no3', 'po4', 'phyc', 'si', 'ph', 'kd', 'nppv', 'dissic', 'uice', 'bsfd', 'salinity', 'vice', 'hsnow', 'ssh', 'fice', 'btemp', 'mlp', 'hice', 'u', 'v', 'fy_age', 'temperature', 'fy_frac', 'albedo'];
 const datesAvaliable = [...Array(12)].map((v, i) => `2020-${String(i + 1).padStart(2, '0')}-01`);
-const depthsAvaliable = ['0', '2', '5'];
+const depthsAvaliable = ['0', '2', '3', '4', '5', '6', '8', '10'];
 // const generateAnimalsAvaliable = (animals) => { [...new Set(animals.map(row => row.species))]; };
 
 // Viewport settings
@@ -131,10 +131,10 @@ const INITIAL_VIEW_STATE = {
 const calculateColor = (row) => {
   const currentVariable = Object.keys(row)[1];
   const currentValue = row[currentVariable];
-  const thesholdValues = legend[currentVariable].values;
-  const thesholdIndex = thesholdValues.findIndex(v => currentValue < v);
+  if (currentValue === null) return [255, 255, 255, 0];
+  const breakIndex = legend[currentVariable].breaks.findIndex(v => currentValue < v);
 
-  return legend[currentVariable].colors.at(thesholdIndex);
+  return legend[currentVariable].colors.at(breakIndex);
 };
 
 const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
@@ -144,7 +144,7 @@ const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
 
 const generateLegend = (variable) => {
   const variableLegend = legend[variable];
-  const labels = [`менее ${variableLegend.values[0]}`].concat(variableLegend.values.map((v, i) => variableLegend.values[i + 1] ? `от ${variableLegend.values[i]} до ${variableLegend.values[i + 1]}` : `более ${variableLegend.values[i]}`));
+  const labels = [`менее ${variableLegend.breaks[0]}`].concat(variableLegend.breaks.map((v, i) => variableLegend.breaks[i + 1] ? `от ${variableLegend.breaks[i]} до ${variableLegend.breaks[i + 1]}` : `более ${variableLegend.breaks[i]}`));
   const legendItems = variableLegend.colors
     .map((v, i) => ({ color: v, label: labels[i] }))
     .reverse();
