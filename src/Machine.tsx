@@ -5,12 +5,6 @@ import { Map } from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import { createStyles, AppShell, Navbar, Header, UnstyledButton, Tooltip, Title, Text, Select, MultiSelect, Stack, Group, Divider, ScrollArea, rem } from '@mantine/core';
 
-import {
-  IconEyeglass,
-  IconDeviceDesktopAnalytics,
-  IconTopologyStar3,
-} from '@tabler/icons-react';
-
 import mapstyle from './basemap.json';
 import legend from './legend.json';
 
@@ -110,12 +104,6 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-const mainLinksData = [
-  { icon: IconEyeglass, label: 'Просмотр' },
-  { icon: IconDeviceDesktopAnalytics, label: 'Ручная оценка' },
-  { icon: IconTopologyStar3, label: 'Машинная оценка' },
-];
-
 const variablesAvaliable = ['spco2', 'o2', 'chl', 'expc', 'zooc', 'no3', 'po4', 'phyc', 'si', 'ph', 'kd', 'nppv', 'dissic', 'uice', 'bsfd', 'salinity', 'vice', 'hsnow', 'ssh', 'fice', 'btemp', 'mlp', 'hice', 'u', 'v', 'fy_age', 'temperature', 'fy_frac', 'albedo'];
 const datesAvaliable = [...Array(12)].map((v, i) => `2020-${String(i + 1).padStart(2, '0')}-01`);
 const depthsAvaliable = ['0', '2', '3', '4', '5', '6', '8', '10'];
@@ -156,9 +144,8 @@ const generateLegend = (variable) => {
   )
 };
 
-export function DoubleNavbar() {
+export function Machine({ avaliableTabs, activeTab, setActiveTab }) {
   const { classes, cx } = useStyles();
-  const [activeMainLink, setActiveMainLink] = useState('Просмотр');
   const [selectedVariable, setSelectedVariable] = useState<string | null>(variablesAvaliable[0]);
   const [selectedDate, setSelectedDate] = useState<string | null>(datesAvaliable[0]);
   const [selectedDepth, setSelectedDepth] = useState<string | null>(depthsAvaliable[0]);
@@ -174,16 +161,16 @@ export function DoubleNavbar() {
       .then(r => r.json())
       .then(json => setVariableData(json));
   }, [selectedVariable, selectedDate, selectedDepth]);
-  console.log(variableData);
+  // console.log(variableData);
 
   useEffect(() => {
     fetch(`http://178.154.229.47:3000/animals?select=h3,species,occurences&date=eq.${selectedDate}&order=occurences.desc`)
       .then(r => r.json())
       .then(json => setAnimalsData(json));
   }, [selectedDate]);
-  console.log(animalsData);
+  // console.log(animalsData);
 
-  const mainLinks = mainLinksData.map((link) => (
+  const tabs = avaliableTabs.map((link) => (
     <Tooltip
       label={link.label}
       position="right"
@@ -192,9 +179,9 @@ export function DoubleNavbar() {
       key={link.label}
     >
       <UnstyledButton
-        onClick={() => setActiveMainLink(link.label)}
+        onClick={() => setActiveTab(link.label)}
         className={
-          cx(classes.mainLink, { [classes.mainLinkActive]: link.label === activeMainLink })
+          cx(classes.mainLink, { [classes.mainLinkActive]: link.label === activeTab })
         }
       >
         <link.icon size="1.4rem" stroke={1.5} />
@@ -220,20 +207,20 @@ export function DoubleNavbar() {
     <AppShell
       padding="md"
       navbar={
-        <Navbar height="100vh" width={{ sm: 500 }}>{
+        <Navbar width={{ sm: 500 }}>{
           <Navbar.Section grow className={classes.wrapper}>
             <div className={classes.aside}>
               <div className={classes.logo}>
                 {/* <MantineLogo type="mark" size={30} /> */}
               </div>
-              {mainLinks}
+              {tabs}
             </div>
             <div className={classes.main}>
               <Title order={4} className={classes.title}>
-                {activeMainLink}
+                {activeTab}
               </Title>
-              <ScrollArea type="always" h="100%">
-                <Title m="md" order={6}>
+              <ScrollArea type="always" h="calc(100vh - 140px)">
+                {/* <Title m="md" order={6}>
                   Параметры среды
                 </Title>
                 <Select
@@ -258,7 +245,7 @@ export function DoubleNavbar() {
                   label="Глубина"
                 />
 
-                <Divider my="xl" />
+                <Divider my="xl" /> */}
                 <Title m="md" order={6}>
                   Животные
                 </Title>
@@ -270,7 +257,7 @@ export function DoubleNavbar() {
                 labelPosition="left"
                 label="Сгруппировать по родам"
               /> */}
-                <MultiSelect
+                {/* <MultiSelect
                   clearable
                   m="md"
                   label="Вид"
@@ -279,7 +266,7 @@ export function DoubleNavbar() {
                   data={[...new Set(animalsData.map(row => row.species))]}
                 />
 
-                <Divider my="xl" />
+                <Divider my="xl" /> */}
                 <Title m="md" order={6}>
                   Легенда
                 </Title>
