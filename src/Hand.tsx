@@ -118,13 +118,11 @@ const INITIAL_VIEW_STATE = {
   zoom: 3,
 };
 
-const calculateColor = (row) => {
-  const currentVariable = Object.keys(row)[1];
-  const currentValue = row[currentVariable];
-  if (currentValue === null) return [255, 255, 255, 0];
-  const breakIndex = legend[currentVariable].breaks.findIndex(v => currentValue < v);
+const calculateColor = (value: number) => {
+  if (value === null) return [255, 255, 255, 0];
+  const breakIndex = legend.score.breaks.findIndex(v => value < v);
 
-  return legend[currentVariable].colors.at(breakIndex);
+  return legend.score.colors.at(breakIndex);
 };
 
 const rgbToHex = (rgb: number[]): string => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('')}`;
@@ -146,52 +144,12 @@ const generateLegend = (variable) => {
 export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
   const { classes, cx } = useStyles();
 
-  // const [selectedVariableWithDepth, setSelectedVariableWithDepth] =
-  //   useState(
-  //     [
-  //       {
-  //         name: variablesWithDepthsAvaliable[0],
-  //         optimum: [40, 60],
-  //         limit: [20, 80],
-  //         min: 0,
-  //         max: 100,
-  //         minRange: 2,
-  //       },
-  //     ]
-  //   );
   const [selectedVariableWithDepth, setSelectedVariableWithDepth] =
     useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(datesAvaliable[0]);
   const [mapData, setMapData] = useState<any[]>([]);
   const [selectedAnimals, setSelectedAnimals] = useState<string[]>([]);
   const [animalsData, setAnimalsData] = useState<[] | null>([]);
-
-  // const [data, setData] = useState<
-  //   [{
-  //     variable_depth: string,
-  //     date: string,
-  //     data: [
-  //       {
-  //         h3: string,
-  //         value: number
-  //       }
-  //     ],
-  //     optimum: [number, number],
-  //     limit: [number, number],
-  //     min: number,
-  //     max: number,
-  //     minRange: number,
-  //   }]
-  // >();
-
-  // useEffect(() => {
-  //   selectedVariableWithDepth
-  //   const [selectedVariable, selectedDepth] = selectedVariableWithDepth.split(' | ');
-
-  //   fetch(`http://178.154.229.47:3000/context?select=h3,${selectedVariable}&date=eq.${selectedDate}&depth=eq.${selectedDepth}`)
-  //     .then(r => r.json())
-  //     .then(json => setMapData(json));
-  // }, [selectedVariableWithDepth, selectedDate]);
 
   useEffect(() => {
     fetch(`http://178.154.229.47:3000/animals?select=h3,species,occurences&date=eq.${selectedDate}&order=occurences.desc`)
@@ -284,7 +242,7 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
   );
 
   const sliders = mapData.map(variable => (
-    <Stack my="md" spacing="xs">
+    <Stack key={variable.name} my="md" spacing="xs">
       <Text fz="sm" mt="xs">{variable.name}</Text>
       <RangeSlider
         name="optimum"
@@ -330,19 +288,45 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
     )
   );
 
-  // const navbarPanel = linksMockdata.map((link) => (
-  //   <a
-  //     className={cx(classes.link, { [classes.linkActive]: activeLink === link })}
-  //     href="/"
-  //     onClick={(event) => {
-  //       event.preventDefault();
-  //       setActiveLink(link);
-  //     }}
-  //     key={link}
-  //   >
-  //     {link}
-  //   </a>
-  // ));
+  const evaluateValue = (value: number, optimum: number[], limit: number[]) => (
+    optimum[0] <= value && value <= optimum[1] ? 100 :
+      limit[0] <= value && value <= limit[1] ? 50
+        : -100
+  );
+
+  const calculateScore = (mapdata: typeof mapData) => (
+    mapdata.slice(1).reduce( // first element is the initial value
+      (acc, currentVariable) => acc.map(
+        (row: { h3: string, value: number }, i: number) => (
+          {
+            ...row,
+            value:
+              row.value +
+              evaluateValue(
+                currentVariable.data[i].value,
+                currentVariable.optimum,
+                currentVariable.limit
+              ),
+          }
+        )
+      ),
+      mapdata[0].data.map(
+        (r: { h3: string, value: number }) => (
+          {
+            ...r,
+            value: evaluateValue(r.value, mapdata[0].optimum, mapdata[0].limit)
+          }
+        )
+      ) // arrays of data must be equal! (needs to be configured)
+    )
+      .map(
+        (r: { h3: string, value: number }) => (
+          { ...r, value: r.value / mapdata.length < 50 ? 0 : r.value / mapdata.length }
+        )
+      )
+  );
+
+  console.log(mapData.length > 0 && calculateScore(mapData));
 
   return (
     <AppShell
@@ -391,7 +375,7 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
                 <Title order={6}>
                   Легенда
                 </Title>
-                {/* {generateLegend(selectedVariable)} */}
+                {generateLegend('score')}
               </ScrollArea>
             </div>
           </Navbar.Section>
@@ -411,14 +395,14 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
           mapLib={maplibregl}
           mapStyle={mapstyle}
         />
-        {/* <H3HexagonLayer
+        <H3HexagonLayer
           id="hexagons-context"
-          data={variableData}
+          data={mapData.length > 0 && calculateScore(mapData)}
           filled
           pickable
           getHexagon={e => e.h3}
-          getFillColor={e => calculateColor(e)}
-        /> */}
+          getFillColor={e => calculateColor(e.value)}
+        />
         <H3HexagonLayer
           id="hexagons-animals"
           data={animalsData.filter(row => selectedAnimals.includes(row.species))}
