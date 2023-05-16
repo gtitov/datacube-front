@@ -156,12 +156,12 @@ export function Machine({ avaliableTabs, activeTab, setActiveTab }) {
 
   // const [groupByGenus, setGroupByGenus] = useState(false);
 
-  useEffect(() => {
-    fetch(`http://178.154.229.47:3000/context?select=h3,${selectedVariable}&date=eq.${selectedDate}&depth=eq.${selectedDepth}`)
-      .then(r => r.json())
-      .then(json => setVariableData(json));
-  }, [selectedVariable, selectedDate, selectedDepth]);
-  // console.log(variableData);
+  // useEffect(() => {
+  //   fetch(`http://178.154.229.47:3000/context?select=h3,${selectedVariable}&date=eq.${selectedDate}&depth=eq.${selectedDepth}`)
+  //     .then(r => r.json())
+  //     .then(json => setVariableData(json));
+  // }, [selectedVariable, selectedDate, selectedDepth]);
+  // // console.log(variableData);
 
   useEffect(() => {
     fetch(`http://178.154.229.47:3000/animals?select=h3,species,occurences&date=eq.${selectedDate}&order=occurences.desc`)
@@ -170,21 +170,21 @@ export function Machine({ avaliableTabs, activeTab, setActiveTab }) {
   }, [selectedDate]);
   // console.log(animalsData);
 
-  const tabs = avaliableTabs.map((link) => (
+  const tabs = avaliableTabs.map((tab) => (
     <Tooltip
-      label={link.label}
+      label={tab.label}
       position="right"
       withArrow
       transitionProps={{ duration: 0 }}
-      key={link.label}
+      key={tab.label}
     >
       <UnstyledButton
-        onClick={() => setActiveTab(link.label)}
+        onClick={() => setActiveTab(tab.label)}
         className={
-          cx(classes.mainLink, { [classes.mainLinkActive]: link.label === activeTab })
+          cx(classes.mainLink, { [classes.mainLinkActive]: tab.label === activeTab })
         }
       >
-        <link.icon size="1.4rem" stroke={1.5} />
+        <tab.icon size="1.4rem" stroke={1.5} />
       </UnstyledButton>
     </Tooltip>
   ));
@@ -219,55 +219,33 @@ export function Machine({ avaliableTabs, activeTab, setActiveTab }) {
               <Title order={4} className={classes.title}>
                 {activeTab}
               </Title>
-              <ScrollArea type="always" h="calc(100vh - 140px)">
-                {/* <Title m="md" order={6}>
-                  Параметры среды
-                </Title>
-                <Select
-                  m="md"
-                  data={variablesAvaliable}
-                  value={selectedVariable}
-                  onChange={setSelectedVariable}
-                  label="Показатель"
-                />
-                <Select
-                  m="md"
-                  data={datesAvaliable}
-                  value={selectedDate}
-                  onChange={setSelectedDate}
-                  label="Месяц"
-                />
-                <Select
-                  m="md"
-                  data={depthsAvaliable}
-                  value={selectedDepth}
-                  onChange={setSelectedDepth}
-                  label="Глубина"
-                />
-
-                <Divider my="xl" /> */}
-                <Title m="md" order={6}>
+              <ScrollArea m="md" type="always" h="calc(100vh - 140px)">
+                <Title order={6}>
                   Животные
                 </Title>
-
-                {/* <Switch
-                m="md"
-                checked={groupByGenus}
-                onChange={(event) => setGroupByGenus(event.currentTarget.checked)}
-                labelPosition="left"
-                label="Сгруппировать по родам"
-              /> */}
-                {/* <MultiSelect
+                <MultiSelect
                   clearable
-                  m="md"
                   label="Вид"
                   value={selectedAnimals}
                   onChange={setSelectedAnimals}
                   data={[...new Set(animalsData.map(row => row.species))]}
                 />
 
-                <Divider my="xl" /> */}
-                <Title m="md" order={6}>
+                <Divider my="xl" />
+
+                <Title order={6}>
+                  Метод оценки
+                </Title>
+                <Select
+                  data={variablesAvaliable}
+                  value={selectedVariable}
+                  onChange={setSelectedVariable}
+                  label="Название"
+                />
+
+                <Divider my="xl" />
+
+                <Title order={6}>
                   Легенда
                 </Title>
                 {generateLegend(selectedVariable)}

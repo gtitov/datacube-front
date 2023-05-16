@@ -3,6 +3,7 @@ import {
   IconEyeglass,
   IconDeviceDesktopAnalytics,
   IconTopologyStar3,
+  // IconAB,
 } from '@tabler/icons-react';
 
 import { Viewer } from './Viewer';
@@ -13,6 +14,7 @@ const avaliableTabs = [
   { icon: IconEyeglass, label: 'Просмотр' },
   { icon: IconDeviceDesktopAnalytics, label: 'Ручная оценка' },
   { icon: IconTopologyStar3, label: 'Машинная оценка' },
+  // { icon: IconAB, label: 'Сравнение' },
 ];
 
 export default function App() {

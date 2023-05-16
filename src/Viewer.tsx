@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import DeckGL from '@deck.gl/react/typed';
 import { H3HexagonLayer } from '@deck.gl/geo-layers/typed';
 import { Map } from 'react-map-gl';
@@ -120,28 +120,25 @@ const calculateColor = (row) => {
   const currentVariable = Object.keys(row)[1];
   const currentValue = row[currentVariable];
   if (currentValue === null) return [255, 255, 255, 0];
-  const breakIndex = legend[currentVariable].breaks.findIndex(v => currentValue < v);
+  const breakIndex = legend[currentVariable].breaks.findIndex((v: number) => currentValue < v);
 
   return legend[currentVariable].colors.at(breakIndex);
 };
 
-const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
-  const hex = x.toString(16)
-  return hex.length === 1 ? '0' + hex : hex
-}).join('')
+const rgbToHex = (rgb: number[]): string => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('')}`;
 
-const generateLegend = (variable) => {
+const generateLegend = (variable: string) => {
   const variableLegend = legend[variable];
   const labels = [`менее ${variableLegend.breaks[0]}`].concat(variableLegend.breaks.map((v, i) => variableLegend.breaks[i + 1] ? `от ${variableLegend.breaks[i]} до ${variableLegend.breaks[i + 1]}` : `более ${variableLegend.breaks[i]}`));
   const legendItems = variableLegend.colors
     .map((v, i) => ({ color: v, label: labels[i] }))
     .reverse();
   return (
-    <Stack  spacing="xs">
+    <Stack spacing="xs">
       <Text>{variableLegend.label}</Text>
-      {legendItems.map(v => <Group spacing="xs" key={v.label}><div className="w-5 h-5 rounded-sm" style={{ backgroundColor: rgbToHex(...v.color) }} /><Text fz="sm">{v.label}</Text></Group>)}
+      {legendItems.map((v: { color: number[], label: string }) => <Group spacing="xs" key={v.label}><div className="w-5 h-5 rounded-sm" style={{ backgroundColor: rgbToHex(v.color) }} /><Text fz="sm">{v.label}</Text></Group>)}
     </Stack>
-  )
+  );
 };
 
 export function Viewer({ avaliableTabs, activeTab, setActiveTab }) {
@@ -170,24 +167,26 @@ export function Viewer({ avaliableTabs, activeTab, setActiveTab }) {
   }, [selectedDate]);
   // console.log(animalsData);
 
-  const tabs = avaliableTabs.map((link) => (
-    <Tooltip
-      label={link.label}
-      position="right"
-      withArrow
-      transitionProps={{ duration: 0 }}
-      key={link.label}
-    >
-      <UnstyledButton
-        onClick={() => setActiveTab(link.label)}
-        className={
-          cx(classes.mainLink, { [classes.mainLinkActive]: link.label === activeTab })
-        }
+  const tabs = avaliableTabs.map(
+    (tab: { icon: FC<{ size: string, stroke: number }>, label: string }) => (
+      <Tooltip
+        label={tab.label}
+        position="right"
+        withArrow
+        transitionProps={{ duration: 0 }}
+        key={tab.label}
       >
-        <link.icon size="1.4rem" stroke={1.5} />
-      </UnstyledButton>
-    </Tooltip>
-  ));
+        <UnstyledButton
+          onClick={() => setActiveTab(tab.label)}
+          className={
+            cx(classes.mainLink, { [classes.mainLinkActive]: tab.label === activeTab })
+          }
+        >
+          <tab.icon size="1.4rem" stroke={1.5} />
+        </UnstyledButton>
+      </Tooltip>
+    )
+  );
 
   // const navbarPanel = linksMockdata.map((link) => (
   //   <a
