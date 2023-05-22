@@ -121,15 +121,25 @@ const INITIAL_VIEW_STATE = {
 const calculateColor = (value: number) => {
   if (value === null) return [255, 255, 255, 0];
   const breakIndex = legend.score.breaks.findIndex(v => value < v);
-
+  // если нет границы больше, чем выбранное значение, то берёт последний цвет (findIndex -> -1, at(-1) = last)
   return legend.score.colors.at(breakIndex);
 };
 
 const rgbToHex = (rgb: number[]): string => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('')}`;
 
-const generateLegend = (variable) => {
+const generateLegend = (variable: string) => {
   const variableLegend = legend[variable];
-  const labels = [`менее ${variableLegend.breaks[0]}`].concat(variableLegend.breaks.map((v: number, i: number) => variableLegend.breaks[i + 1] ? `от ${variableLegend.breaks[i]} до ${variableLegend.breaks[i + 1]}` : `более ${variableLegend.breaks[i]}`));
+  const labels = ['не подходит'].concat(
+    variableLegend.breaks.map(
+      (v: number, i: number) =>
+        i === 0 ?
+          `менее ${variableLegend.breaks[i + 1]}` :
+          variableLegend.breaks[i + 1] ?
+            `от ${variableLegend.breaks[i]} до ${variableLegend.breaks[i + 1]}` :
+            `более ${variableLegend.breaks[i]}`
+    )
+  );
+
   const legendItems = variableLegend.colors
     .map((v: number[], i: number) => ({ color: v, label: labels[i] }))
     .reverse();
@@ -216,8 +226,8 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
           {
             ...v,
             optimum: [
-              optimumRange[0] < v.limit[0] ? v.limit[0] : optimumRange[0],
-              optimumRange[1] > v.limit[1] ? v.limit[1] : optimumRange[1],
+              optimumRange[0] < v.limit[0] ? v.limit[0] + v.step : optimumRange[0],
+              optimumRange[1] > v.limit[1] ? v.limit[1] - v.step : optimumRange[1],
             ],
           } :
           v
@@ -232,8 +242,8 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
           {
             ...v,
             limit: [
-              limitRange[0] > v.optimum[0] ? v.optimum[0] : limitRange[0],
-              limitRange[1] < v.optimum[1] ? v.optimum[1] : limitRange[1],
+              limitRange[0] > v.optimum[0] ? v.optimum[0] - v.step : limitRange[0],
+              limitRange[1] < v.optimum[1] ? v.optimum[1] + v.step : limitRange[1],
             ],
           } :
           v
@@ -253,6 +263,7 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
         minRange={variable.minRange}
         step={variable.step}
         onChange={currentRange => setOptimum(variable.name, currentRange)}
+        label={(value: number) => value.toFixed(2)}
       />
       <RangeSlider
         name="limit"
@@ -263,6 +274,7 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
         minRange={variable.minRange}
         step={variable.step}
         onChange={currentRange => setLimit(variable.name, currentRange)}
+        label={(value: number) => value.toFixed(2)}
       />
     </Stack>
   ));
@@ -288,10 +300,17 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
     )
   );
 
+  const linearInterpolation = (value: number, optimum: number, limit: number) => (
+    (100 / (optimum - limit)) * (value - limit)
+  );
+
   const evaluateValue = (value: number, optimum: number[], limit: number[]) => (
     optimum[0] <= value && value <= optimum[1] ? 100 :
-      limit[0] <= value && value <= limit[1] ? 50
-        : -100
+      limit[0] <= value && value < optimum[0] ?
+        linearInterpolation(value, optimum[0], limit[0]) :
+        optimum[1] < value && value <= limit[1] ?
+          linearInterpolation(value, optimum[1], limit[1]) :
+          -1000
   );
 
   const calculateScore = (mapdata: typeof mapData) => (
@@ -310,18 +329,18 @@ export function Hand({ avaliableTabs, activeTab, setActiveTab }) {
           }
         )
       ),
-      mapdata[0].data.map(
+      mapdata[0].data.map( // initial value
         (r: { h3: string, value: number }) => (
           {
             ...r,
-            value: evaluateValue(r.value, mapdata[0].optimum, mapdata[0].limit)
+            value: evaluateValue(r.value, mapdata[0].optimum, mapdata[0].limit),
           }
         )
       ) // arrays of data must be equal! (needs to be configured)
     )
       .map(
         (r: { h3: string, value: number }) => (
-          { ...r, value: r.value / mapdata.length < 50 ? 0 : r.value / mapdata.length }
+          { ...r, value: r.value / mapdata.length < 0 ? -1 : r.value / mapdata.length }
         )
       )
   );
