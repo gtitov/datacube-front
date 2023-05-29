@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, FC } from 'react';
 import DeckGL from '@deck.gl/react/typed';
 import { H3HexagonLayer } from '@deck.gl/geo-layers/typed';
@@ -291,6 +292,11 @@ export function Viewer({ avaliableTabs, activeTab, setActiveTab }) {
           pickable
           getHexagon={e => e.h3}
           getFillColor={e => calculateColor(e)}
+          stroked
+          getLineWidth={1}
+          getLineColor={[255, 255, 255]}
+          lineWidthUnits="pixels"
+          extruded={false}
         />
         <H3HexagonLayer
           id="hexagons-animals"
@@ -298,6 +304,16 @@ export function Viewer({ avaliableTabs, activeTab, setActiveTab }) {
           pickable
           getHexagon={e => e.h3}
           getFillColor={[255, 0, 0, 50]}
+        />
+        <H3HexagonLayer
+          id="hexagons-example"
+          data="https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/sf.h3cells.json"
+          // filled
+          // stroked
+          getHexagon={e => e.hex}
+          // getFillColor={[255, 0, 0, 50]}
+          // getLineColor={[0, 0, 0, 255]}
+          // getLineWidth={10}
         />
       </DeckGL>
     </AppShell>

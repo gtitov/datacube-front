@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import DeckGL from '@deck.gl/react/typed';
 import { H3HexagonLayer } from '@deck.gl/geo-layers/typed';
